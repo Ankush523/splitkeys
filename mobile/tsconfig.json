@@ -1,0 +1,11 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "types": [],
+    "lib": ["ES2022", "DOM"],
+    "skipLibCheck": true
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../engine/*.ts"],
+  "exclude": ["**/node_modules", "**/Pods", "../engine/*.test.ts"]
+}

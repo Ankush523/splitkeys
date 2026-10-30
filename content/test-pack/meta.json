@@ -1,0 +1,9 @@
+{
+  "id": "test-pack",
+  "title": "Test Room",
+  "durationMinutes": 10,
+  "minSeats": 2,
+  "maxSeats": 4,
+  "difficulty": "normal",
+  "accent": "#c9a227"
+}

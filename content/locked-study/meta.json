@@ -1,0 +1,9 @@
+{
+  "id": "locked-study",
+  "title": "The Locked Study",
+  "durationMinutes": 45,
+  "minSeats": 2,
+  "maxSeats": 4,
+  "difficulty": "normal",
+  "accent": "#c9a227"
+}

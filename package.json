@@ -1,0 +1,15 @@
+{
+  "name": "splitkeys",
+  "private": true,
+  "description": "Offline escape room on phones — Offline Protocol mesh",
+  "license": "MIT-0",
+  "workspaces": [
+    "engine",
+    "mobile"
+  ],
+  "scripts": {
+    "test": "npm test -w splitkeys-engine",
+    "typecheck": "npm run typecheck -w splitkeys-engine && npm run typecheck -w splitkeys-mobile",
+    "mobile:start": "npm start -w splitkeys-mobile"
+  }
+}

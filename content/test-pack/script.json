@@ -1,0 +1,51 @@
+{
+  "briefing": "Two locks. Two clues. Work together out loud.",
+  "roles": [
+    { "id": "archivist", "name": "Archivist", "seat": 0 },
+    { "id": "engineer", "name": "Engineer", "seat": 1 }
+  ],
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "Entry",
+      "puzzleIds": ["p_door", "p_safe"]
+    }
+  ],
+  "puzzles": {
+    "p_door": {
+      "id": "p_door",
+      "type": "code",
+      "label": "Door keypad",
+      "solution": "1234",
+      "dependsOn": [],
+      "clueIds": ["clue_door"]
+    },
+    "p_safe": {
+      "id": "p_safe",
+      "type": "code",
+      "label": "Wall safe",
+      "solution": "5678",
+      "dependsOn": ["p_door"],
+      "clueIds": ["clue_safe"]
+    }
+  },
+  "clues": {
+    "clue_door": {
+      "id": "clue_door",
+      "seat": 0,
+      "title": "Margin note",
+      "body": "The door code is 1234.",
+      "kind": "text"
+    },
+    "clue_safe": {
+      "id": "clue_safe",
+      "seat": 1,
+      "title": "Schematic",
+      "body": "Safe dial reads 5678 when aligned.",
+      "kind": "text"
+    }
+  },
+  "finale": {
+    "requires": ["p_door", "p_safe"]
+  }
+}

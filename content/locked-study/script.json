@@ -1,0 +1,88 @@
+{
+  "briefing": "The study door sealed behind you. Four minds, four angles — talk, compare, and beat the clock.",
+  "roles": [
+    { "id": "historian", "name": "Historian", "seat": 0 },
+    { "id": "linguist", "name": "Linguist", "seat": 1 },
+    { "id": "engineer", "name": "Engineer", "seat": 2 },
+    { "id": "naturalist", "name": "Naturalist", "seat": 3 }
+  ],
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "Chapter I — The Desk",
+      "puzzleIds": ["p_desk", "p_bookshelf"]
+    },
+    {
+      "id": "ch2",
+      "title": "Chapter II — The Wall",
+      "puzzleIds": ["p_safe", "p_portrait"]
+    }
+  ],
+  "puzzles": {
+    "p_desk": {
+      "id": "p_desk",
+      "type": "code",
+      "label": "Desk drawer",
+      "solution": "1847",
+      "dependsOn": [],
+      "clueIds": ["clue_desk"]
+    },
+    "p_bookshelf": {
+      "id": "p_bookshelf",
+      "type": "code",
+      "label": "Bookshelf latch",
+      "solution": "rose",
+      "dependsOn": [],
+      "clueIds": ["clue_shelf"]
+    },
+    "p_safe": {
+      "id": "p_safe",
+      "type": "code",
+      "label": "Wall safe",
+      "solution": "9031",
+      "dependsOn": ["p_desk", "p_bookshelf"],
+      "clueIds": ["clue_safe"]
+    },
+    "p_portrait": {
+      "id": "p_portrait",
+      "type": "code",
+      "label": "Portrait mechanism",
+      "solution": "north",
+      "dependsOn": ["p_safe"],
+      "clueIds": ["clue_portrait"]
+    }
+  },
+  "clues": {
+    "clue_desk": {
+      "id": "clue_desk",
+      "seat": 0,
+      "title": "Letter fragment",
+      "body": "…the year he vanished was eighteen forty-seven.",
+      "kind": "text"
+    },
+    "clue_shelf": {
+      "id": "clue_shelf",
+      "seat": 1,
+      "title": "Marginalia",
+      "body": "The rose volume is the key — speak its name to the latch.",
+      "kind": "text"
+    },
+    "clue_safe": {
+      "id": "clue_safe",
+      "seat": 2,
+      "title": "Schematic",
+      "body": "Safe dial: nine – zero – three – one when both latches yield.",
+      "kind": "text"
+    },
+    "clue_portrait": {
+      "id": "clue_portrait",
+      "seat": 3,
+      "title": "Compass sketch",
+      "body": "When the safe opens, the eyes look north.",
+      "kind": "text"
+    }
+  },
+  "finale": {
+    "requires": ["p_desk", "p_bookshelf", "p_safe", "p_portrait"]
+  }
+}
