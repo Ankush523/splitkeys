@@ -77,9 +77,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.flush"
+    namespace "com.splitkeys.app"
     defaultConfig {
-        applicationId "com.mizanxali.flush"
+        applicationId "com.splitkeys.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

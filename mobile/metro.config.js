@@ -1,11 +1,17 @@
 const path = require('path');
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 
-// The poker engine lives beside this app, shared with the web app.
-const engine = path.resolve(__dirname, '../engine');
+const projectRoot = __dirname;
+const workspaceRoot = path.resolve(projectRoot, '..');
+const engine = path.resolve(workspaceRoot, 'engine');
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), {
-  watchFolders: [engine],
-  // engine/ has no node_modules of its own; Babel helpers it needs come from this app's.
-  resolver: { nodeModulesPaths: [path.resolve(__dirname, 'node_modules')] },
+module.exports = mergeConfig(getDefaultConfig(projectRoot), {
+  watchFolders: [engine, workspaceRoot],
+  // npm workspaces hoist deps to the repo root; Metro must resolve both.
+  resolver: {
+    nodeModulesPaths: [
+      path.resolve(projectRoot, 'node_modules'),
+      path.resolve(workspaceRoot, 'node_modules'),
+    ],
+  },
 });

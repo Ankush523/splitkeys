@@ -28,11 +28,14 @@ export const gmTheme = {
   success: '#6bc49a',
 };
 
+import { Platform } from 'react-native';
+
+/** System fonts at launch (Geist assets remain optional for a later design pass). */
 export const F = {
-  regular: 'Geist-Regular',
-  medium: 'Geist-Medium',
-  semibold: 'Geist-SemiBold',
-  mono: 'GeistMono-Medium',
+  regular: Platform.select({ ios: 'System', default: 'sans-serif' }),
+  medium: Platform.select({ ios: 'System', default: 'sans-serif-medium' }),
+  semibold: Platform.select({ ios: 'System', default: 'sans-serif-medium' }),
+  mono: Platform.select({ ios: 'Menlo', default: 'monospace' }),
 };
 
 export const space = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const;

@@ -35,14 +35,34 @@
 	</dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Split Keys uses Bluetooth so players and the GM can run an escape room without internet.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Split Keys uses Bluetooth so players and the GM can run an escape room without internet.</string>
 	<key>NSBonjourServices</key>
 	<array>
+		<string>_http._tcp</string>
 		<string>_offlineprotocol._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Split Keys uses your local network to reach nearby players when Wi‑Fi is available.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>Default Configuration</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>
@@ -60,12 +80,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>UIAppFonts</key>
-	<array>
-		<string>Geist-Regular.ttf</string>
-		<string>Geist-Medium.ttf</string>
-		<string>GeistMono-Medium.ttf</string>
-		<string>Geist-SemiBold.ttf</string>
-	</array>
 </dict>
 </plist>

@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { GmView } from '../../../engine/runtime.ts';
-import type { Host } from '../../../engine/session.ts';
+import type { GmView } from '../../../engine/runtime';
+import type { Host } from '../../../engine/session';
 import { Body, Chip, GhostButton, PrimaryButton, Screen, Title } from '../ui/primitives';
 import { TimerBar } from '../ui/Timer';
 import { F, gmTheme, space } from '../theme/tokens';

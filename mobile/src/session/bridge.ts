@@ -1,6 +1,6 @@
-import type { StoryPack } from '../../../engine/pack.ts';
-import type { GmView } from '../../../engine/runtime.ts';
-import { Host, Seat, type Me, type Msg, type Send } from '../../../engine/session.ts';
+import type { StoryPack } from '../../../engine/pack';
+import type { GmView } from '../../../engine/runtime';
+import { Host, Seat, type Me, type Msg, type Send } from '../../../engine/session';
 
 export const APP_ID = 'splitkeys';
 

@@ -28,15 +28,24 @@ Embedding `@offline-protocol/mesh-sdk` requires **AGPL-3.0-only** or a commercia
 ```bash
 npm install
 npm test
-cd mobile && npm install   # first time: native deps
-npm run mobile:start       # Metro from repo root
+cd mobile && npm install
+cd mobile && npm run ios:pods   # once before first iOS build (installs CocoaPods deps)
 ```
 
 **Run on devices (required for mesh):** use two or more physical phones. Simulators do not discover peers.
 
 ```bash
-cd mobile && npm run ios    # or npm run android
+# Terminal 1 — Metro (repo root OR mobile/)
+npm run mobile:start
+# or: cd mobile && npm start
+
+# Terminal 2 — install to device
+cd mobile && npm run ios
 ```
+
+**iOS signing:** Bundle ID is `com.splitkeys.app`. Open `mobile/ios/SplitKeys.xcworkspace` in Xcode → target **SplitKeys** → **Signing & Capabilities** → select your team.
+
+**Rebrand note:** The app was scaffolded from another RN project; icons and name are now **Split Keys**. Delete any old **Flush** install on your phone before testing (different bundle id).
 
 ### Play flow
 

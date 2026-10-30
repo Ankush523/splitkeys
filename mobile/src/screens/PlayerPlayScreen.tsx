@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import type { PlayerView } from '../../../engine/runtime.ts';
-import type { Seat } from '../../../engine/session.ts';
+import type { PlayerView } from '../../../engine/runtime';
+import type { Seat } from '../../../engine/session';
 import { ClueCard } from '../ui/ClueCard';
 import { CodeLock } from '../ui/CodeLock';
 import { Body, Chip, Divider, GhostButton, Screen, Title } from '../ui/primitives';

@@ -2,6 +2,9 @@ import UIKit
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
+#if DEBUG
+import Network
+#endif
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -10,12 +13,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   var reactNativeDelegate: ReactNativeDelegate?
   var reactNativeFactory: RCTReactNativeFactory?
 
+  #if DEBUG
+  /// Keeps a Bonjour browser alive so iOS shows Local Network permission (Metro / dev server on device).
+  private static var localNetworkBrowser: NWBrowser?
+  #endif
+
   func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
-    // The host phone carries the table (and is the browsers' Bluetooth hub): don't let it lock mid-hand.
-    application.isIdleTimerDisabled = true
+    #if DEBUG
+    triggerLocalNetworkPermissionIfNeeded()
+    #endif
 
     let delegate = ReactNativeDelegate()
     let factory = RCTReactNativeFactory(delegate: delegate)
@@ -34,6 +43,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     return true
   }
+
+  #if DEBUG
+  private func triggerLocalNetworkPermissionIfNeeded() {
+    let params = NWParameters()
+    params.includePeerToPeer = true
+    let browser = NWBrowser(for: .bonjour(type: "_http._tcp", domain: nil), using: params)
+    browser.start(queue: .main)
+    AppDelegate.localNetworkBrowser = browser
+  }
+  #endif
 }
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
@@ -43,9 +62,16 @@ class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
 
   override func bundleURL() -> URL? {
 #if DEBUG
-    RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
+    #if targetEnvironment(simulator)
+      return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
+    #else
+      if let embedded = Bundle.main.url(forResource: "main", withExtension: "jsbundle") {
+        return embedded
+      }
+      return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
+    #endif
 #else
-    Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+    return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
 #endif
   }
 }
