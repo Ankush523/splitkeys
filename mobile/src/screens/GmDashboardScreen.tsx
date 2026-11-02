@@ -11,15 +11,26 @@ export function GmDashboardScreen({
   host,
   onClose,
   live,
+  localSeatTaken,
+  onClaimLocalSeat,
+  onOpenLocalPlay,
+  safeAreaEdges,
 }: {
   view: GmView;
   host: Host;
   onClose: () => void;
   live: boolean;
+  localSeatTaken: boolean;
+  onClaimLocalSeat: () => void;
+  onOpenLocalPlay?: () => void;
+  safeAreaEdges?: ('top' | 'bottom' | 'left' | 'right')[];
 }) {
+  const seated = view.seats.filter(Boolean).length;
+  const canOpen = seated >= host.pack.meta.minSeats;
+  const edges = safeAreaEdges ?? ['top', 'bottom'];
   return (
     <Screen tone="gm">
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.safe} edges={edges}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text style={styles.kicker}>GM · {view.packTitle}</Text>
@@ -31,10 +42,21 @@ export function GmDashboardScreen({
         {view.phase === 'lobby' ? (
           <View style={styles.block}>
             <Body tone="gm" muted>
-              {view.seats.filter(Boolean).length} players connected. Need at least{' '}
-              {host.pack.meta.minSeats} to open the room.
+              {seated} seated · need {host.pack.meta.minSeats} for this story.
+              {'\n'}
+              Two phones? Take a seat here, then have the other device join nearby.
             </Body>
-            <PrimaryButton tone="gm" label="Open briefing" onPress={() => host.start()} />
+            {!localSeatTaken ? (
+              <PrimaryButton tone="gm" label="Take a seat on this phone" onPress={onClaimLocalSeat} />
+            ) : (
+              <GhostButton tone="gm" label="You are seated on this phone" onPress={onOpenLocalPlay} />
+            )}
+            <PrimaryButton
+              tone="gm"
+              label="Open briefing"
+              onPress={() => host.start()}
+              disabled={!canOpen}
+            />
           </View>
         ) : null}
         {view.phase === 'briefing' ? (

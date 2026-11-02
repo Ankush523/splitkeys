@@ -134,6 +134,35 @@ function roleForSeat(script: RoomScript, seat: number): { roleId: string; roleNa
     : { roleId: 'guest', roleName: 'Guest' };
 }
 
+function occupiedSeatIndices(runtime: RoomRuntime): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < runtime.seats.length; i++) {
+    if (runtime.seats[i]) out.push(i);
+  }
+  return out;
+}
+
+/**
+ * When fewer people than script roles, clues for empty roles are split across
+ * seated players so a 2-phone setup (GM+player + one joiner) can finish the room.
+ */
+export function clueSeatForPlayer(
+  script: RoomScript,
+  runtime: RoomRuntime,
+  clueSeat: number | null,
+): number | null {
+  if (clueSeat === null) return null;
+  const occupied = occupiedSeatIndices(runtime);
+  if (!occupied.length) return clueSeat;
+  if (occupied.includes(clueSeat)) return clueSeat;
+
+  const roleSeats = [...new Set(script.roles.map(r => r.seat))].sort((a, b) => a - b);
+  const vacantRoles = roleSeats.filter(rs => !runtime.seats[rs]);
+  const idx = vacantRoles.indexOf(clueSeat);
+  if (idx < 0) return clueSeat;
+  return occupied[idx % occupied.length]!;
+}
+
 function cluesForSeat(script: RoomScript, runtime: RoomRuntime, seat: number) {
   const seatState = runtime.seats[seat];
   if (!seatState) return [];
@@ -178,7 +207,8 @@ export function deliverCluesForSeat(
     const p = script.puzzles[pid]!;
     for (const cid of p.clueIds) {
       const clue = script.clues[cid]!;
-      if (clue.seat !== null && clue.seat !== seat) continue;
+      const target = clueSeatForPlayer(script, runtime, clue.seat);
+      if (target !== null && target !== seat) continue;
       if (s.clues.includes(cid)) continue;
       s.clues.push(cid);
     }

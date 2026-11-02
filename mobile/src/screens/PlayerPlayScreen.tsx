@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { PlayerView } from '../../../engine/runtime';
-import type { Seat } from '../../../engine/session';
-import { ClueCard } from '../ui/ClueCard';
+export type PlayerSeatActions = {
+  submitCode: (puzzleId: string, code: string) => void;
+  hintRequest: (puzzleId: string) => void;
+};
+import { ClueCard, ClueDetailModal } from '../ui/ClueCard';
 import { CodeLock } from '../ui/CodeLock';
-import { Body, Chip, Divider, GhostButton, Screen, Title } from '../ui/primitives';
+import { Body, Chip, Divider, GhostButton, Screen } from '../ui/primitives';
 import { TimerBar } from '../ui/Timer';
 import { F, playerTheme, space } from '../theme/tokens';
 
@@ -16,12 +19,15 @@ export function PlayerPlayScreen({
   seat,
   onLeave,
   rejectToken,
+  safeAreaEdges,
 }: {
   view: PlayerView;
-  seat: Seat;
+  seat: PlayerSeatActions;
   onLeave: () => void;
   rejectToken: number;
+  safeAreaEdges?: ('top' | 'bottom' | 'left' | 'right')[];
 }) {
+  const edges = safeAreaEdges ?? ['top', 'bottom'];
   const [tab, setTab] = useState<Tab>('desk');
   const [clueOpen, setClueOpen] = useState<(typeof view.clues)[0] | null>(null);
 
@@ -32,7 +38,7 @@ export function PlayerPlayScreen({
 
   return (
     <Screen tone="player">
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.safe} edges={edges}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text style={styles.chapter}>{view.chapterTitle}</Text>
@@ -136,17 +142,13 @@ export function PlayerPlayScreen({
         </View>
       </SafeAreaView>
 
-      <Modal visible={!!clueOpen} animationType="slide" onRequestClose={() => setClueOpen(null)}>
-        <Screen tone="player">
-          <SafeAreaView style={[styles.safe, styles.modal]}>
-            <Title>{clueOpen?.title}</Title>
-            <ScrollView>
-              <Body>{clueOpen?.body}</Body>
-            </ScrollView>
-            <GhostButton label="Close" onPress={() => setClueOpen(null)} />
-          </SafeAreaView>
-        </Screen>
-      </Modal>
+      <ClueDetailModal
+        visible={!!clueOpen}
+        title={clueOpen?.title ?? ''}
+        body={clueOpen?.body ?? ''}
+        kind={clueOpen?.kind ?? 'text'}
+        onClose={() => setClueOpen(null)}
+      />
     </Screen>
   );
 }
@@ -189,5 +191,4 @@ const styles = StyleSheet.create({
   },
   teamName: { fontFamily: F.medium, fontSize: 16, color: playerTheme.text },
   teamRole: { fontFamily: F.regular, fontSize: 14, color: playerTheme.muted },
-  modal: { padding: space.lg, gap: space.md },
 });

@@ -32,7 +32,7 @@ cd mobile && npm install
 cd mobile && npm run ios:pods   # once before first iOS build (installs CocoaPods deps)
 ```
 
-**Run on devices (required for mesh):** use two or more physical phones. Simulators do not discover peers.
+**Run on devices (required for mesh):** simulators do not discover peers. You can playtest the full story with **two phones** (see below).
 
 ```bash
 # Terminal 1 — Metro (repo root OR mobile/)
@@ -52,6 +52,18 @@ cd mobile && npm run ios
 1. **GM** → Host as GM → pick story poster → **Open briefing** when enough players joined → **Start timer**.
 2. **Players** → Join nearby room → pick the GM poster → read briefing → **Desk / Locks** (talk IRL; request hints from GM phone).
 3. **Win** when finale puzzles are solved before the clock; debrief shows hints used.
+
+### Two-phone playtest (full room)
+
+With only two devices, one phone is **GM + seated player**, the other **joins as the second player**:
+
+1. Start Metro (`npm run mobile:start`).
+2. **Phone A:** Host as GM → **Take a seat on this phone** (lobby).
+3. **Phone B:** Join nearby room → pick the GM’s room.
+4. **Phone A:** When it shows 2 seated, **Open briefing** → **Start timer**.
+5. **Phone A:** Use **GM table** / **My clues** to switch between the control room and your private clues. Compare aloud with Phone B — clues for missing roles are split between the two of you.
+
+Keep Bluetooth on and stay within a few metres. Android may need `adb reverse tcp:8081 tcp:8081` if Metro is on your laptop.
 
 ### Mesh
 

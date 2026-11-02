@@ -1,4 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Body, GhostButton, Screen, Title } from './primitives';
 import { F, playerTheme, radius, space } from '../theme/tokens';
 
 export function ClueCard({
@@ -30,6 +32,60 @@ export function ClueCard({
     </Pressable>
   );
 }
+
+export function ClueDetailModal({
+  visible,
+  title,
+  body,
+  kind,
+  onClose,
+}: {
+  visible: boolean;
+  title: string;
+  body: string;
+  kind: string;
+  onClose: () => void;
+}) {
+  const hint = kind === 'hint';
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <Screen tone="player">
+        <SafeAreaView style={detailStyles.safe} edges={['top', 'bottom']}>
+          <ScrollView
+            contentContainerStyle={detailStyles.scroll}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator
+          >
+            <Text style={detailStyles.kicker}>{hint ? 'Hint' : 'Evidence'}</Text>
+            <Title>{title}</Title>
+            <Body>{body}</Body>
+          </ScrollView>
+          <View style={detailStyles.footer}>
+            <GhostButton label="Close" onPress={onClose} />
+          </View>
+        </SafeAreaView>
+      </Screen>
+    </Modal>
+  );
+}
+
+const detailStyles = StyleSheet.create({
+  safe: { flex: 1, paddingHorizontal: space.lg },
+  scroll: {
+    flexGrow: 1,
+    paddingTop: space.md,
+    paddingBottom: space.xl,
+    gap: space.md,
+  },
+  footer: { paddingVertical: space.sm },
+  kicker: {
+    fontFamily: F.medium,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: playerTheme.muted,
+  },
+});
 
 const styles = StyleSheet.create({
   card: {

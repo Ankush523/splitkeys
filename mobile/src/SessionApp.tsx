@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { activateKeepAwake, deactivateKeepAwake } from '@sayem314/react-native-keep-awake';
-import type { GmView } from '../../engine/runtime';
+import type { GmView, PlayerView } from '../../engine/runtime';
 import type { StoryPack } from '../../engine/pack';
 import { useNearbyRoom } from './mesh/useNearbyRoom';
 import {
@@ -25,7 +25,7 @@ import {
 import { DebriefScreen } from './screens/DebriefScreen';
 import { GmDashboardScreen } from './screens/GmDashboardScreen';
 import { PlayerPlayScreen } from './screens/PlayerPlayScreen';
-import { Body, GhostButton, PrimaryButton, Screen, Title } from './ui/primitives';
+import { Body, Chip, GhostButton, PrimaryButton, Screen, Title } from './ui/primitives';
 import { F, playerTheme, space } from './theme/tokens';
 
 export type SessionStart =
@@ -46,6 +46,8 @@ type Props = {
 export default function SessionApp({ name, start, onHome }: Props) {
   const [mode, setMode] = useState<Mode | null>(null);
   const [gmView, setGmView] = useState<GmView | null>(null);
+  const [localView, setLocalView] = useState<PlayerView | null>(null);
+  const [gmPanel, setGmPanel] = useState<'gm' | 'play'>('gm');
   const [rejectToken, setRejectToken] = useState(0);
   const [, bump] = useReducer((x: number) => x + 1, 0);
   const prevSolved = useRef(0);
@@ -102,7 +104,14 @@ export default function SessionApp({ name, start, onHome }: Props) {
     started.current = true;
     if (start.kind === 'gm') {
       const send = meshSend(room.send);
-      const bridge = createGmBridge(send, start.pack, me(), setGmView, room.peers.map(p => p.id));
+      const bridge = createGmBridge(
+        send,
+        start.pack,
+        me(),
+        setGmView,
+        room.peers.map(p => p.id),
+        setLocalView,
+      );
       bridgeRef.current = { gm: bridge };
       setGmView(bridge.host.view);
       setMode({ k: 'gm', bridge, pack: start.pack });
@@ -145,25 +154,77 @@ export default function SessionApp({ name, start, onHome }: Props) {
         />
       );
     } else {
-      body = (
-        <GmDashboardScreen
-          view={gmView}
-          host={mode.bridge.host}
-          live={live}
-          onClose={() =>
-            Alert.alert('End session?', 'Players will be disconnected.', [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'End',
-                style: 'destructive',
-                onPress: () => {
-                  mode.bridge.host.close();
-                  void leaveAll();
+      const host = mode.bridge.host;
+      const localTaken = host.localSeatIndex() >= 0;
+      const localSeat = {
+        submitCode: (puzzleId: string, code: string) => host.submitLocalCode(puzzleId, code),
+        hintRequest: (puzzleId: string) => host.requestLocalHint(puzzleId),
+      };
+
+      const gmPlayBody =
+        gmPanel === 'play' && localView ? (
+          localView.phase === 'briefing' ? (
+            <Briefing
+              text={localView.briefing}
+              role={localView.roleName}
+              onContinue={() => setGmPanel('play')}
+              safeAreaEdges={['bottom']}
+            />
+          ) : (
+            <PlayerPlayScreen
+              view={localView}
+              seat={localSeat}
+              rejectToken={rejectToken}
+              onLeave={() => setGmPanel('gm')}
+              safeAreaEdges={['bottom']}
+            />
+          )
+        ) : (
+          <GmDashboardScreen
+            view={gmView}
+            host={host}
+            live={live}
+            localSeatTaken={localTaken}
+            safeAreaEdges={localTaken ? ['bottom'] : undefined}
+            onClaimLocalSeat={() => {
+              host.claimLocalSeat(name.trim() || 'Host');
+              setGmPanel('play');
+            }}
+            onOpenLocalPlay={() => setGmPanel('play')}
+            onClose={() =>
+              Alert.alert('End session?', 'Players will be disconnected.', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'End',
+                  style: 'destructive',
+                  onPress: () => {
+                    host.close();
+                    void leaveAll();
+                  },
                 },
-              },
-            ])
-          }
-        />
+              ])
+            }
+          />
+        );
+
+      body = localTaken ? (
+        <SafeAreaView style={styles.gmShell} edges={['top']}>
+          <View style={styles.gmTabs}>
+            <Chip
+              label="GM table"
+              active={gmPanel === 'gm'}
+              onPress={() => setGmPanel('gm')}
+            />
+            <Chip
+              label="My clues"
+              active={gmPanel === 'play'}
+              onPress={() => setGmPanel('play')}
+            />
+          </View>
+          <View style={styles.gmShellBody}>{gmPlayBody}</View>
+        </SafeAreaView>
+      ) : (
+        gmPlayBody
       );
     }
   } else if (mode?.k === 'player') {
@@ -282,10 +343,21 @@ function WaitingRoom({ hostLost, onCancel }: { hostLost: boolean; onCancel: () =
   );
 }
 
-function Briefing({ text, role, onContinue }: { text: string; role: string; onContinue: () => void }) {
+function Briefing({
+  text,
+  role,
+  onContinue,
+  safeAreaEdges,
+}: {
+  text: string;
+  role: string;
+  onContinue: () => void;
+  safeAreaEdges?: ('top' | 'bottom' | 'left' | 'right')[];
+}) {
+  const edges = safeAreaEdges ?? ['top', 'bottom'];
   return (
     <Screen tone="player">
-      <SafeAreaView style={[styles.wait, { gap: space.lg }]}>
+      <SafeAreaView style={[styles.wait, { gap: space.lg }]} edges={edges}>
         <Text style={styles.briefKicker}>Briefing · {role}</Text>
         <Title>Dossier</Title>
         <ScrollView>
@@ -298,6 +370,15 @@ function Briefing({ text, role, onContinue }: { text: string; role: string; onCo
 }
 
 const styles = StyleSheet.create({
+  gmShell: { flex: 1, backgroundColor: playerTheme.bg },
+  gmShellBody: { flex: 1 },
+  gmTabs: {
+    flexDirection: 'row',
+    gap: space.sm,
+    paddingHorizontal: space.md,
+    paddingBottom: space.xs,
+    backgroundColor: playerTheme.bg,
+  },
   wait: { flex: 1, paddingHorizontal: space.lg, gap: space.md },
   sheet: {
     position: 'absolute',

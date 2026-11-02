@@ -13,6 +13,11 @@ const testPack: StoryPack = {
   script: JSON.parse(readFileSync(join(here, '../content/test-pack/script.json'), 'utf8')),
 };
 
+const lockedStudy: StoryPack = {
+  meta: JSON.parse(readFileSync(join(here, '../content/locked-study/meta.json'), 'utf8')),
+  script: JSON.parse(readFileSync(join(here, '../content/locked-study/script.json'), 'utf8')),
+};
+
 function network() {
   const queue: (() => void)[] = [];
   const nodes = new Map<string, { message(from: string, m: Msg): void }>();
@@ -83,6 +88,52 @@ test('two players join, solve locks in order, and escape', () => {
   assert.equal(gm!.escaped, true);
   assert.equal(seats[0].view?.escaped, true);
   assert.equal(seats[1].view?.escaped, true);
+
+  host.stop();
+  host.close();
+});
+
+test('two seated players receive redistributed clues for vacant roles (locked study)', () => {
+  const { nodes, net, flush } = network();
+  const host = new Host(
+    net('gm'),
+    lockedStudy,
+    { id: 'gm', name: 'Host' },
+    () => {},
+    { durationMs: 600_000 },
+  );
+  nodes.set('gm', host);
+
+  host.claimLocalSeat('Archivist');
+  const remote = new Seat(net('p1'), { id: 'p1', name: 'Partner' }, () => {});
+  nodes.set('p1', remote);
+
+  host.peerUp('p1');
+  remote.peerUp('gm');
+  flush();
+  remote.join('gm');
+  flush();
+
+  host.start();
+  flush();
+  host.beginPlay();
+  flush();
+
+  let local: import('./runtime.ts').PlayerView | null = null;
+  host.setLocalViewListener(v => {
+    local = v;
+  });
+  flush();
+
+  assert.ok(local!.clues.some(c => c.body.includes('forty-seven')));
+  assert.ok(remote.view!.clues.some(c => c.body.includes('rose')));
+
+  host.submitLocalCode('p_desk', '1847');
+  remote.submitCode('p_bookshelf', 'rose');
+  flush();
+
+  assert.ok(local!.clues.some(c => c.body.includes('nine')));
+  assert.ok(remote.view!.clues.some(c => c.body.includes('north')));
 
   host.stop();
   host.close();

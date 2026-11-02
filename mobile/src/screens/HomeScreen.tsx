@@ -26,7 +26,9 @@ export function HomeScreen({ name, setName, catalog, onHost, onJoin }: Props) {
           <LogoMark />
           <Title>Escape room night, no Wi‑Fi</Title>
           <Body muted>
-            One phone runs the room. Everyone else gets private clues. Talk in real life — phones stay in character.
+            One phone runs the room; everyone else gets private clues. With only two phones, host as GM, tap
+            “Take a seat on this phone”, then join from the other device — missing roles’ clues are split between
+            you.
           </Body>
 
           {catalog.error ? <Text style={styles.error}>Story packs: {catalog.error}</Text> : null}

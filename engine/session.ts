@@ -43,6 +43,9 @@ export type HostConfig = {
   durationMs?: number;
 };
 
+/** In-process player on the GM phone (not a mesh peer). */
+export const LOCAL_SEAT_PEER_ID = '__local_seat__';
+
 const cleanName = (x: unknown, max = 20) =>
   (typeof x === 'string' ? x.replace(/\s+/g, ' ').trim().slice(0, max) : '') || 'Player';
 
@@ -75,6 +78,7 @@ export class Host {
   private readonly net: Send;
   private readonly me: Me;
   private readonly onChange: (v: GmView) => void;
+  private onLocalViewChange: ((v: PlayerView | null) => void) | null = null;
 
   constructor(
     net: Send,
@@ -98,6 +102,42 @@ export class Host {
     }
     this.push();
     for (const p of peers) this.peerUp(p);
+  }
+
+  /** GM phone also plays a seat (2-device playtest: host + one joiner). */
+  setLocalViewListener(cb: (v: PlayerView | null) => void) {
+    this.onLocalViewChange = cb;
+    this.pushLocalView();
+  }
+
+  claimLocalSeat(name: string): boolean {
+    if (this.runtime.phase !== 'lobby') return false;
+    if (seatOf(this.runtime, LOCAL_SEAT_PEER_ID) >= 0) return true;
+    this.message(LOCAL_SEAT_PEER_ID, { t: 'join', name: cleanName(name) });
+    return seatOf(this.runtime, LOCAL_SEAT_PEER_ID) >= 0;
+  }
+
+  submitLocalCode(puzzleId: string, code: string) {
+    this.message(LOCAL_SEAT_PEER_ID, { t: 'submit_code', puzzleId, code });
+  }
+
+  requestLocalHint(puzzleId: string) {
+    this.message(LOCAL_SEAT_PEER_ID, { t: 'hint_request', puzzleId });
+  }
+
+  localSeatIndex(): number {
+    return seatOf(this.runtime, LOCAL_SEAT_PEER_ID);
+  }
+
+  private pushLocalView() {
+    if (!this.onLocalViewChange) return;
+    const i = this.localSeatIndex();
+    if (i < 0) {
+      this.onLocalViewChange(null);
+      return;
+    }
+    const view = playerView(this.pack, this.runtime, this.epoch, this.v, i);
+    this.onLocalViewChange(view);
   }
 
   private info(): Msg {
@@ -241,7 +281,8 @@ export class Host {
   close() {
     this.stop();
     for (const s of this.runtime.seats) {
-      if (s && s.id !== this.me.id) this.net.send(s.id, { t: 'closed' });
+      if (!s || s.id === this.me.id || s.id === LOCAL_SEAT_PEER_ID) continue;
+      this.net.send(s.id, { t: 'closed' });
     }
   }
 
@@ -267,7 +308,9 @@ export class Host {
       seats: next,
       hintsUsed: this.runtime.hintsUsed + 1,
     };
-    this.net.send(s.id, { t: 'hint', puzzleId, title, body });
+    if (s.id !== LOCAL_SEAT_PEER_ID) {
+      this.net.send(s.id, { t: 'hint', puzzleId, title, body });
+    }
     this.push();
   }
 
@@ -277,10 +320,13 @@ export class Host {
     this.onChange(this.view);
     for (let i = 0; i < this.runtime.seats.length; i++) {
       const s = this.runtime.seats[i];
-      if (!s || s.id === this.me.id || !this.peers.has(s.id)) continue;
+      if (!s || s.id === this.me.id || s.id === LOCAL_SEAT_PEER_ID || !this.peers.has(s.id)) {
+        continue;
+      }
       const view = playerView(this.pack, this.runtime, this.epoch, this.v, i);
       if (view) this.net.send(s.id, { t: 'state', view });
     }
+    this.pushLocalView();
   }
 }
 

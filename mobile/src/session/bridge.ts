@@ -1,5 +1,5 @@
 import type { StoryPack } from '../../../engine/pack';
-import type { GmView } from '../../../engine/runtime';
+import type { GmView, PlayerView } from '../../../engine/runtime';
 import { Host, Seat, type Me, type Msg, type Send } from '../../../engine/session';
 
 export const APP_ID = 'splitkeys';
@@ -32,8 +32,10 @@ export function createGmBridge(
   me: Me,
   onChange: (view: GmView) => void,
   peerIds: string[] = [],
+  onLocalView?: (view: PlayerView | null) => void,
 ): GmBridge {
   const host = new Host(send, pack, me, onChange, {}, peerIds);
+  if (onLocalView) host.setLocalViewListener(onLocalView);
   return {
     host,
     onMessage(from, data) {
