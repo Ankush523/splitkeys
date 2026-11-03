@@ -1,6 +1,5 @@
 import { type ReactNode } from 'react';
-import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { BlurView } from '@react-native-community/blur';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { radius, space, themeOf, type Tone } from '../theme/tokens';
 
 type Props = {
@@ -9,7 +8,7 @@ type Props = {
   style?: StyleProp<ViewStyle>;
   contentStyle?: StyleProp<ViewStyle>;
   radius?: number;
-  /** 0 = tint-only (no native blur). Use for nested controls to avoid layout glitches. */
+  /** Visual depth 0–32 (tint strength only; no native blur — RN 0.82 new-arch safe). */
   blur?: number;
   padded?: boolean;
 };
@@ -20,32 +19,49 @@ export function GlassPanel({
   style,
   contentStyle,
   radius: corner = radius.lg,
-  blur = Platform.OS === 'ios' ? 24 : 18,
+  blur = 20,
   padded = true,
 }: Props) {
   const c = themeOf(tone);
-  const useBlur = blur > 0;
+  const depth = Math.min(32, Math.max(0, blur));
+  const tintOpacity = 0.42 + depth / 80;
+  const fillOpacity = 0.06 + depth / 200;
 
   return (
     <View
       collapsable={false}
       style={[styles.shell, { borderRadius: corner, borderColor: c.glassStroke }, style]}
     >
-      {useBlur ? (
-        <BlurView
-          style={[StyleSheet.absoluteFillObject, { borderRadius: corner }]}
-          blurType="dark"
-          blurAmount={blur}
-          reducedTransparencyFallbackColor={c.bgCard}
-        />
-      ) : null}
       <View
         pointerEvents="none"
         style={[
           StyleSheet.absoluteFillObject,
           {
             borderRadius: corner,
-            backgroundColor: useBlur ? c.glassTint : c.glassFill,
+            backgroundColor: c.bgCard,
+            opacity: 0.35,
+          },
+        ]}
+      />
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFillObject,
+          {
+            borderRadius: corner,
+            backgroundColor: c.glassTint,
+            opacity: tintOpacity,
+          },
+        ]}
+      />
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFillObject,
+          {
+            borderRadius: corner,
+            backgroundColor: 'rgba(255,255,255,1)',
+            opacity: fillOpacity,
           },
         ]}
       />
@@ -80,7 +96,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.14)',
     zIndex: 1,
   },
 });
