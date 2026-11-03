@@ -1,10 +1,21 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { StoryPack } from '../../../engine/pack';
 import { getDefaultPack, getStoryPacks, type PackCatalog } from '../content/packs';
-import { Body, GhostButton, LogoMark, PrimaryButton, Screen, Title } from '../ui/primitives';
-import { F, playerTheme, space } from '../theme/tokens';
+import {
+  Body,
+  Card,
+  Eyebrow,
+  GhostButton,
+  LogoMark,
+  PrimaryButton,
+  Screen,
+  SectionHeader,
+  Title,
+} from '../ui/primitives';
+import { StoryPoster } from '../ui/StoryPoster';
+import { F, playerTheme, radius, space } from '../theme/tokens';
 
 type Props = {
   name: string;
@@ -22,48 +33,55 @@ export function HomeScreen({ name, setName, catalog, onHost, onJoin }: Props) {
   return (
     <Screen tone="player">
       <SafeAreaView style={styles.home} edges={['top', 'bottom']}>
-        <ScrollView contentContainerStyle={styles.homeScroll} keyboardShouldPersistTaps="handled">
-          <LogoMark />
-          <Title>Escape room night, no Wi‑Fi</Title>
-          <Body muted>
-            One phone runs the room; everyone else gets private clues. With only two phones, host as GM, tap
-            “Take a seat on this phone”, then join from the other device — missing roles’ clues are split between
-            you.
-          </Body>
+        <ScrollView
+          contentContainerStyle={styles.homeScroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <LogoMark large />
+          <View style={styles.hero}>
+            <Eyebrow>Private clues · real voices</Eyebrow>
+            <Title>Every phone holds a different piece of the room.</Title>
+            <Body muted>
+              Host the story on one device. Everyone else joins nearby — no Wi‑Fi, no spoilers in chat.
+            </Body>
+          </View>
 
           {catalog.error ? <Text style={styles.error}>Story packs: {catalog.error}</Text> : null}
 
-          <Text style={styles.label}>Your name</Text>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            style={styles.input}
-            placeholder="Name"
-            placeholderTextColor={playerTheme.dim}
-          />
+          <Card>
+            <SectionHeader title="Your name" />
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              style={styles.input}
+              placeholder="How the table knows you"
+              placeholderTextColor={playerTheme.dim}
+              autoCapitalize="words"
+              autoCorrect={false}
+            />
+          </Card>
 
-          <Text style={styles.label}>Story pack (GM)</Text>
+          <SectionHeader title="Story for tonight" />
           <View style={styles.packRow}>
             {packs.map(p => (
-              <Pressable
+              <StoryPoster
                 key={p.meta.id}
+                pack={p}
+                selected={packId === p.meta.id}
                 onPress={() => setPackId(p.meta.id)}
-                style={[
-                  styles.poster,
-                  packId === p.meta.id && styles.posterActive,
-                  { borderColor: p.meta.accent },
-                ]}
-              >
-                <Text style={[styles.posterTitle, { color: p.meta.accent }]}>{p.meta.title}</Text>
-                <Text style={styles.posterMeta}>
-                  {p.meta.durationMinutes} min · {p.meta.minSeats}–{p.meta.maxSeats} players
-                </Text>
-              </Pressable>
+              />
             ))}
           </View>
 
-          <PrimaryButton label="Host as GM" onPress={() => onHost(pack)} />
-          <GhostButton label="Join nearby room" onPress={onJoin} />
+          <View style={styles.actions}>
+            <PrimaryButton label="Host as game master" onPress={() => onHost(pack)} />
+            <GhostButton label="Join a nearby room" onPress={onJoin} />
+          </View>
+
+          <Text style={styles.footerNote}>
+            Two phones? After hosting, take a seat on the GM phone and join from the second device.
+          </Text>
         </ScrollView>
       </SafeAreaView>
     </Screen>
@@ -72,34 +90,29 @@ export function HomeScreen({ name, setName, catalog, onHost, onJoin }: Props) {
 
 const styles = StyleSheet.create({
   home: { flex: 1, paddingHorizontal: space.lg },
-  homeScroll: { gap: space.md, paddingBottom: space.xxl },
-  label: {
-    fontFamily: F.medium,
-    fontSize: 13,
-    color: playerTheme.muted,
-    marginTop: space.sm,
-  },
+  homeScroll: { gap: space.lg, paddingBottom: space.xxl },
+  hero: { gap: space.sm, marginTop: space.md },
   input: {
     fontFamily: F.regular,
-    fontSize: 16,
+    fontSize: 17,
     color: playerTheme.text,
     borderWidth: 1,
-    borderColor: playerTheme.line,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: playerTheme.bgElevated,
-    minHeight: 48,
+    borderColor: playerTheme.glassStroke,
+    borderRadius: radius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    minHeight: 52,
   },
-  packRow: { gap: space.sm },
-  poster: {
-    borderWidth: 1,
-    borderRadius: 14,
-    padding: space.md,
-    backgroundColor: playerTheme.bgElevated,
+  packRow: { gap: space.md },
+  actions: { gap: space.sm, marginTop: space.sm },
+  footerNote: {
+    fontFamily: F.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: playerTheme.muted,
+    textAlign: 'center',
+    paddingHorizontal: space.md,
   },
-  posterActive: { backgroundColor: 'rgba(201,162,39,0.08)' },
-  posterTitle: { fontFamily: F.semibold, fontSize: 18 },
-  posterMeta: { fontFamily: F.regular, fontSize: 13, color: playerTheme.muted, marginTop: 4 },
   error: { color: playerTheme.danger, fontFamily: F.regular },
 });

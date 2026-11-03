@@ -1,7 +1,9 @@
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { GlassPanel } from './GlassPanel';
+import { PressableScale } from './PressableScale';
 import { Body, GhostButton, Screen, Title } from './primitives';
-import { F, playerTheme, radius, space } from '../theme/tokens';
+import { F, playerTheme, space } from '../theme/tokens';
 
 export function ClueCard({
   title,
@@ -16,20 +18,20 @@ export function ClueCard({
 }) {
   const hint = kind === 'hint';
   const content = (
-    <View style={[styles.card, hint && styles.hintCard]}>
+    <GlassPanel tone="player" blur={hint ? 20 : 12} contentStyle={styles.card}>
       <Text style={styles.kicker}>{hint ? 'Hint' : 'Evidence'}</Text>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.body} numberOfLines={onPress ? 3 : undefined}>
         {body}
       </Text>
-      {onPress ? <Text style={styles.more}>Open</Text> : null}
-    </View>
+      {onPress ? <Text style={styles.more}>Read full document</Text> : null}
+    </GlassPanel>
   );
   if (!onPress) return content;
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+    <PressableScale accessibilityRole="button" onPress={onPress} style={styles.wrap}>
       {content}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -58,10 +60,12 @@ export function ClueDetailModal({
           >
             <Text style={detailStyles.kicker}>{hint ? 'Hint' : 'Evidence'}</Text>
             <Title>{title}</Title>
-            <Body>{body}</Body>
+            <GlassPanel tone="player" blur={18}>
+              <Body>{body}</Body>
+            </GlassPanel>
           </ScrollView>
           <View style={detailStyles.footer}>
-            <GhostButton label="Close" onPress={onClose} />
+            <GhostButton label="Close document" onPress={onClose} />
           </View>
         </SafeAreaView>
       </Screen>
@@ -88,18 +92,8 @@ const detailStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: playerTheme.bgElevated,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: playerTheme.line,
-    padding: space.md,
-    gap: space.sm,
-  },
-  hintCard: {
-    borderColor: playerTheme.accent,
-    backgroundColor: playerTheme.accentSoft,
-  },
+  wrap: { alignSelf: 'stretch' },
+  card: { gap: space.sm },
   kicker: {
     fontFamily: F.medium,
     fontSize: 11,
@@ -121,7 +115,7 @@ const styles = StyleSheet.create({
   more: {
     fontFamily: F.medium,
     fontSize: 13,
-    color: playerTheme.accent,
+    color: playerTheme.accentBright,
     marginTop: 4,
   },
 });

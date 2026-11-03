@@ -1,7 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import {
   Alert,
-  FlatList,
   Pressable,
   ScrollView,
   StatusBar,
@@ -25,8 +24,19 @@ import {
 import { DebriefScreen } from './screens/DebriefScreen';
 import { GmDashboardScreen } from './screens/GmDashboardScreen';
 import { PlayerPlayScreen } from './screens/PlayerPlayScreen';
-import { Body, Chip, GhostButton, PrimaryButton, Screen, Title } from './ui/primitives';
-import { F, playerTheme, space } from './theme/tokens';
+import { IconChevron } from './ui/icons';
+import { SegmentedControl } from './ui/SegmentedControl';
+import {
+  Body,
+  Card,
+  Eyebrow,
+  GhostButton,
+  PrimaryButton,
+  Screen,
+  Title,
+} from './ui/primitives';
+import { GlassPanel } from './ui/GlassPanel';
+import { F, playerTheme, radius, space } from './theme/tokens';
 
 export type SessionStart =
   | { kind: 'gm'; pack: StoryPack }
@@ -210,15 +220,14 @@ export default function SessionApp({ name, start, onHome }: Props) {
       body = localTaken ? (
         <SafeAreaView style={styles.gmShell} edges={['top']}>
           <View style={styles.gmTabs}>
-            <Chip
-              label="GM table"
-              active={gmPanel === 'gm'}
-              onPress={() => setGmPanel('gm')}
-            />
-            <Chip
-              label="My clues"
-              active={gmPanel === 'play'}
-              onPress={() => setGmPanel('play')}
+            <SegmentedControl
+              tone={gmPanel === 'gm' ? 'gm' : 'player'}
+              options={[
+                { id: 'gm' as const, label: 'GM table' },
+                { id: 'play' as const, label: 'My clues' },
+              ]}
+              value={gmPanel}
+              onChange={setGmPanel}
             />
           </View>
           <View style={styles.gmShellBody}>{gmPlayBody}</View>
@@ -266,10 +275,14 @@ export default function SessionApp({ name, start, onHome }: Props) {
   } else {
     body = (
       <Screen tone="player">
-        <SafeAreaView style={styles.wait}>
-          <Title>Starting…</Title>
+        <SafeAreaView style={styles.wait} edges={['top', 'bottom']}>
+          <Eyebrow>Connecting</Eyebrow>
+          <Title>Preparing the room</Title>
           <Body muted>
-            {room.error || (room.status === 'starting' ? 'Bluetooth and mesh are waking up…' : 'One moment…')}
+            {room.error ||
+              (room.status === 'starting'
+                ? 'Bluetooth and mesh are waking up…'
+                : 'One moment…')}
           </Body>
           <GhostButton label="Cancel" onPress={() => void leaveAll()} />
         </SafeAreaView>
@@ -303,40 +316,51 @@ function JoinSheet({
   hosts: { id: string; name: string }[];
   onPick: (id: string) => void;
 }) {
-  if (!hosts.length) {
-    return (
-      <View style={styles.sheet}>
-        <Body muted>Searching for GM phones nearby… Keep the host app open within a few metres.</Body>
-      </View>
-    );
-  }
   return (
-    <View style={styles.sheet}>
-      <Text style={styles.sheetTitle}>Nearby rooms</Text>
-      <FlatList
-        data={hosts}
-        keyExtractor={h => h.id}
-        renderItem={({ item }) => (
-          <Pressable style={styles.hostRow} onPress={() => onPick(item.id)}>
-            <Text style={styles.hostName}>{item.name}</Text>
-            <Text style={styles.hostJoin}>Join</Text>
-          </Pressable>
-        )}
-      />
-    </View>
+    <>
+      <View style={styles.scrim} accessibilityElementsHidden importantForAccessibility="no" />
+      <SafeAreaView style={styles.sheetWrap} edges={['bottom']}>
+        <GlassPanel tone="player" radius={radius.xl} blur={20} style={styles.sheet} contentStyle={styles.sheetInner}>
+          <Text style={styles.sheetTitle}>{hosts.length ? 'Nearby rooms' : 'Searching…'}</Text>
+          {!hosts.length ? (
+            <Body muted>Keep the host app open within a few metres. Bluetooth must stay on.</Body>
+          ) : (
+            <ScrollView style={styles.hostList} keyboardShouldPersistTaps="handled">
+              {hosts.map(item => (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [styles.hostRow, pressed && { opacity: 0.85 }]}
+                  onPress={() => onPick(item.id)}
+                >
+                  <View style={styles.hostTextCol}>
+                    <Text style={styles.hostName}>{item.name}</Text>
+                    <Text style={styles.hostMeta}>Tap to join</Text>
+                  </View>
+                  <IconChevron color={playerTheme.accentBright} />
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+        </GlassPanel>
+      </SafeAreaView>
+    </>
   );
 }
 
 function WaitingRoom({ hostLost, onCancel }: { hostLost: boolean; onCancel: () => void }) {
   return (
     <Screen tone="player">
-      <SafeAreaView style={styles.wait}>
-        <Title>Connecting</Title>
-        <Body muted>
-          {hostLost
-            ? 'Lost the GM link — walk closer. Reconnecting…'
-            : 'Waiting for seat assignment from the GM…'}
-        </Body>
+      <SafeAreaView style={styles.wait} edges={['top', 'bottom']}>
+        <Eyebrow>{hostLost ? 'Reconnecting' : 'Lobby'}</Eyebrow>
+        <Title>{hostLost ? 'Link lost' : 'Waiting for your seat'}</Title>
+        <Card>
+          <Body muted>
+            {hostLost
+              ? 'Walk closer to the game master. The room will reconnect automatically.'
+              : 'The GM will assign your role shortly. Stay in the physical room with your team.'}
+          </Body>
+        </Card>
         <GhostButton label="Cancel" onPress={onCancel} />
       </SafeAreaView>
     </Screen>
@@ -358,10 +382,12 @@ function Briefing({
   return (
     <Screen tone="player">
       <SafeAreaView style={[styles.wait, { gap: space.lg }]} edges={edges}>
-        <Text style={styles.briefKicker}>Briefing · {role}</Text>
+        <Eyebrow>Briefing · {role}</Eyebrow>
         <Title>Dossier</Title>
-        <ScrollView>
-          <Body>{text}</Body>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: space.lg }}>
+          <Card>
+            <Body>{text}</Body>
+          </Card>
         </ScrollView>
         <PrimaryButton label="Enter the room" onPress={onContinue} />
       </SafeAreaView>
@@ -370,44 +396,54 @@ function Briefing({
 }
 
 const styles = StyleSheet.create({
-  gmShell: { flex: 1, backgroundColor: playerTheme.bg },
-  gmShellBody: { flex: 1 },
+  gmShell: { flex: 1 },
+  gmShellBody: { flex: 1, minHeight: 0 },
   gmTabs: {
-    flexDirection: 'row',
-    gap: space.sm,
     paddingHorizontal: space.md,
-    paddingBottom: space.xs,
-    backgroundColor: playerTheme.bg,
+    paddingBottom: space.sm,
   },
   wait: { flex: 1, paddingHorizontal: space.lg, gap: space.md },
-  sheet: {
+  scrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: playerTheme.scrim,
+  },
+  sheetWrap: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: playerTheme.bgElevated,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: space.lg,
-    maxHeight: '45%',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: playerTheme.line,
+    paddingHorizontal: space.sm,
   },
-  sheetTitle: { fontFamily: F.semibold, fontSize: 16, color: playerTheme.text, marginBottom: space.sm },
+  sheet: {
+    maxHeight: '46%',
+  },
+  sheetInner: {
+    padding: space.lg,
+    maxHeight: 360,
+  },
+  hostList: {
+    maxHeight: 220,
+  },
+  hostTextCol: { flex: 1, minWidth: 0, paddingRight: space.sm },
+  sheetTitle: {
+    fontFamily: F.semibold,
+    fontSize: 18,
+    color: playerTheme.text,
+    marginBottom: space.md,
+  },
   hostRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    alignItems: 'center',
+    paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: playerTheme.line,
+    borderBottomColor: playerTheme.lineSoft,
   },
-  hostName: { fontFamily: F.medium, fontSize: 16, color: playerTheme.text },
-  hostJoin: { fontFamily: F.semibold, fontSize: 15, color: playerTheme.accent },
-  briefKicker: {
-    fontFamily: F.medium,
-    fontSize: 12,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+  hostName: { fontFamily: F.semibold, fontSize: 17, color: playerTheme.text },
+  hostMeta: {
+    fontFamily: F.regular,
+    fontSize: 13,
     color: playerTheme.muted,
+    marginTop: 2,
   },
 });

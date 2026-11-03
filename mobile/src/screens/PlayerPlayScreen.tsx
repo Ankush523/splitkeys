@@ -2,17 +2,28 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { PlayerView } from '../../../engine/runtime';
+import { ClueCard, ClueDetailModal } from '../ui/ClueCard';
+import { CodeLock } from '../ui/CodeLock';
+import { IconBag, IconDesk, IconLock, IconTeam } from '../ui/icons';
+import { GlassPanel } from '../ui/GlassPanel';
+import { PressableScale } from '../ui/PressableScale';
+import { Body, Card, Divider, GhostButton, Screen } from '../ui/primitives';
+import { TimerBar } from '../ui/Timer';
+import { F, playerTheme, radius, space } from '../theme/tokens';
+
 export type PlayerSeatActions = {
   submitCode: (puzzleId: string, code: string) => void;
   hintRequest: (puzzleId: string) => void;
 };
-import { ClueCard, ClueDetailModal } from '../ui/ClueCard';
-import { CodeLock } from '../ui/CodeLock';
-import { Body, Chip, Divider, GhostButton, Screen } from '../ui/primitives';
-import { TimerBar } from '../ui/Timer';
-import { F, playerTheme, space } from '../theme/tokens';
 
 type Tab = 'desk' | 'bag' | 'locks' | 'team';
+
+const TABS: { id: Tab; label: string; Icon: typeof IconDesk }[] = [
+  { id: 'desk', label: 'Desk', Icon: IconDesk },
+  { id: 'bag', label: 'Bag', Icon: IconBag },
+  { id: 'locks', label: 'Locks', Icon: IconLock },
+  { id: 'team', label: 'Team', Icon: IconTeam },
+];
 
 export function PlayerPlayScreen({
   view,
@@ -36,40 +47,40 @@ export function PlayerPlayScreen({
     [view.locks],
   );
 
+  const solvedCount = view.locks.filter(l => l.status === 'solved').length;
+
   return (
     <Screen tone="player">
       <SafeAreaView style={styles.safe} edges={edges}>
         <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.chapter}>{view.chapterTitle}</Text>
-            <Text style={styles.role}>{view.roleName}</Text>
+          <View style={styles.headerMain}>
+            <Text style={styles.chapter}>{view.chapterTitle || view.packTitle}</Text>
+            <View style={styles.roleRow}>
+              <Text style={styles.role}>{view.roleName}</Text>
+              <View style={styles.progressPill}>
+                <Text style={styles.progressText}>
+                  {solvedCount}/{view.locks.length} locks
+                </Text>
+              </View>
+            </View>
           </View>
           <TimerBar msLeft={view.timerMsLeft} />
         </View>
 
-        <View style={styles.tabs}>
-          {(
-            [
-              ['desk', 'Desk'],
-              ['bag', 'Bag'],
-              ['locks', 'Locks'],
-              ['team', 'Team'],
-            ] as const
-          ).map(([id, label]) => (
-            <Chip
-              key={id}
-              label={label}
-              active={tab === id}
-              onPress={() => setTab(id)}
-            />
-          ))}
-        </View>
-
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           {tab === 'desk' && (
             <View style={styles.section}>
               {view.clues.length === 0 ? (
-                <Body muted>No clues yet. Listen to the GM briefing and your teammates.</Body>
+                <Card>
+                  <Body muted>
+                    No evidence yet. Listen to the briefing and compare notes with your team out loud.
+                  </Body>
+                </Card>
               ) : (
                 view.clues.map(c => (
                   <ClueCard
@@ -85,19 +96,23 @@ export function PlayerPlayScreen({
           )}
 
           {tab === 'bag' && (
-            <View style={styles.section}>
+            <Card>
               <Body muted>
                 {view.bag.length
                   ? view.bag.join(', ')
-                  : 'Your bag is empty. Items you collect in the room will appear here.'}
+                  : 'Your bag is empty. Objects you collect in the room will appear here.'}
               </Body>
-            </View>
+            </Card>
           )}
 
           {tab === 'locks' && (
             <View style={styles.section}>
               {availableLocks.length === 0 ? (
-                <Body muted>No locks ready on your phone yet. Keep talking — another clue may unlock one.</Body>
+                <Card>
+                  <Body muted>
+                    No locks are ready on your phone. Keep talking — a teammate’s discovery may unlock yours.
+                  </Body>
+                </Card>
               ) : (
                 availableLocks.map(lock => (
                   <View key={lock.id} style={{ gap: space.sm }}>
@@ -106,20 +121,17 @@ export function PlayerPlayScreen({
                       rejectToken={rejectToken}
                       onSubmit={code => seat.submitCode(lock.id, code)}
                     />
-                    <GhostButton
-                      label="Request hint"
-                      onPress={() => seat.hintRequest(lock.id)}
-                    />
+                    <GhostButton label="Request hint from GM" onPress={() => seat.hintRequest(lock.id)} />
                   </View>
                 ))
               )}
               <Divider />
+              <Text style={styles.solvedLabel}>Solved</Text>
               <Body muted>
-                Solved:{' '}
                 {view.locks
                   .filter(l => l.status === 'solved')
                   .map(l => l.label)
-                  .join(' · ') || 'none yet'}
+                  .join(' · ') || 'None yet'}
               </Body>
             </View>
           )}
@@ -128,17 +140,42 @@ export function PlayerPlayScreen({
             <View style={styles.section}>
               {view.team.map(m => (
                 <View key={m.seat} style={styles.teamRow}>
-                  <Text style={styles.teamName}>{m.name}</Text>
-                  <Text style={styles.teamRole}>{m.roleName}</Text>
+                  <View>
+                    <Text style={styles.teamName}>{m.name}</Text>
+                    <Text style={styles.teamRole}>{m.roleName}</Text>
+                  </View>
+                  <View style={styles.teamBadge}>
+                    <Text style={styles.teamBadgeText}>Seat {m.seat + 1}</Text>
+                  </View>
                 </View>
               ))}
-              <Body muted>Talk out loud — this tab never shows secrets.</Body>
+              <Body muted small>
+                This tab never shows secrets — coordinate in the real room.
+              </Body>
             </View>
           )}
         </ScrollView>
 
-        <View style={styles.footer}>
-          <GhostButton label="Leave session" onPress={onLeave} />
+        <View style={styles.footerStack}>
+          <GlassPanel tone="player" radius={radius.xl} blur={16} padded={false} contentStyle={styles.bottomBar}>
+            {TABS.map(({ id, label, Icon }) => {
+              const active = tab === id;
+              return (
+                <PressableScale
+                  key={id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  haptic={false}
+                  onPress={() => setTab(id)}
+                  style={[styles.tabBtn, active && styles.tabBtnActive]}
+                >
+                  <Icon size={22} color={active ? playerTheme.accentBright : playerTheme.dim} />
+                  <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{label}</Text>
+                </PressableScale>
+              );
+            })}
+          </GlassPanel>
+          <GhostButton label="Leave session" compact onPress={onLeave} />
         </View>
       </SafeAreaView>
 
@@ -157,38 +194,100 @@ const styles = StyleSheet.create({
   safe: { flex: 1, paddingHorizontal: space.md },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: space.md,
     paddingVertical: space.md,
   },
+  headerMain: { flex: 1, minWidth: 0 },
   chapter: {
     fontFamily: F.medium,
-    fontSize: 13,
+    fontSize: 12,
     color: playerTheme.muted,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
+  roleRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
   role: {
     fontFamily: F.semibold,
-    fontSize: 20,
+    fontSize: 22,
     color: playerTheme.text,
+    letterSpacing: -0.3,
   },
-  tabs: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.sm,
-    marginBottom: space.sm,
+  progressPill: {
+    backgroundColor: playerTheme.accentSoft,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: playerTheme.lineSoft,
   },
-  scroll: { paddingBottom: space.xl, gap: space.md },
+  progressText: {
+    fontFamily: F.medium,
+    fontSize: 11,
+    color: playerTheme.accentBright,
+  },
+  scrollView: { flex: 1 },
+  scroll: { paddingBottom: space.md, gap: space.md },
   section: { gap: space.md },
-  footer: { paddingVertical: space.sm },
+  solvedLabel: {
+    fontFamily: F.medium,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: playerTheme.muted,
+  },
+  footerStack: {
+    gap: space.sm,
+    marginTop: space.sm,
+    paddingTop: space.xs,
+  },
+  bottomBar: {
+    flexDirection: 'row',
+    paddingVertical: space.sm,
+    paddingHorizontal: space.xs,
+  },
+  tabBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
+    gap: 4,
+    borderRadius: radius.lg,
+  },
+  tabBtnActive: {
+    backgroundColor: playerTheme.accentSoft,
+  },
+  tabLabel: {
+    fontFamily: F.medium,
+    fontSize: 11,
+    color: playerTheme.dim,
+  },
+  tabLabelActive: {
+    color: playerTheme.accentBright,
+    fontFamily: F.semibold,
+  },
   teamRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: playerTheme.line,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: space.md,
+    backgroundColor: playerTheme.bgCard,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: playerTheme.lineSoft,
   },
-  teamName: { fontFamily: F.medium, fontSize: 16, color: playerTheme.text },
-  teamRole: { fontFamily: F.regular, fontSize: 14, color: playerTheme.muted },
+  teamName: { fontFamily: F.semibold, fontSize: 16, color: playerTheme.text },
+  teamRole: { fontFamily: F.regular, fontSize: 13, color: playerTheme.muted, marginTop: 2 },
+  teamBadge: {
+    backgroundColor: playerTheme.bgElevated,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+  },
+  teamBadgeText: {
+    fontFamily: F.medium,
+    fontSize: 11,
+    color: playerTheme.muted,
+  },
 });

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, StyleSheet, Text, TextInput, View } from 'react-native';
 import ReactNativeHapticFeedback from 'react-native-haptic-feedback';
-import { F, playerTheme, radius, space } from '../theme/tokens';
+import { GlassPanel } from './GlassPanel';
 import { GhostButton, PrimaryButton } from './primitives';
+import { F, playerTheme, radius, space } from '../theme/tokens';
 
 export function CodeLock({
   label,
@@ -12,7 +13,6 @@ export function CodeLock({
 }: {
   label: string;
   disabled?: boolean;
-  /** Increment to play a wrong-code shake. */
   rejectToken?: number;
   onSubmit: (code: string) => void;
 }) {
@@ -31,73 +31,75 @@ export function CodeLock({
 
   return (
     <Animated.View
-      style={[
-        styles.box,
-        {
-          transform: [
-            {
-              translateX: shake.interpolate({
-                inputRange: [-1, 1],
-                outputRange: [-8, 8],
-              }),
-            },
-          ],
-        },
-      ]}
+      style={{
+        alignSelf: 'stretch',
+        transform: [
+          {
+            translateX: shake.interpolate({
+              inputRange: [-1, 1],
+              outputRange: [-8, 8],
+            }),
+          },
+        ],
+      }}
     >
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        accessibilityLabel={`Code for ${label}`}
-        editable={!disabled}
-        value={code}
-        onChangeText={setCode}
-        placeholder="Enter code"
-        placeholderTextColor={playerTheme.dim}
-        autoCapitalize="characters"
-        autoCorrect={false}
-        style={styles.input}
-      />
-      <View style={styles.row}>
-        <GhostButton
-          label="Clear"
-          onPress={() => setCode('')}
+      <GlassPanel tone="player" blur={16} contentStyle={styles.box}>
+        <Text style={styles.kicker}>Lock</Text>
+        <Text style={styles.label}>{label}</Text>
+        <TextInput
+          accessibilityLabel={`Code for ${label}`}
+          editable={!disabled}
+          value={code}
+          onChangeText={setCode}
+          placeholder="Enter code"
+          placeholderTextColor={playerTheme.dim}
+          autoCapitalize="characters"
+          autoCorrect={false}
+          style={styles.input}
         />
-        <PrimaryButton
-          label="Try lock"
-          disabled={disabled || !code.trim()}
-          onPress={() => onSubmit(code.trim())}
-        />
-      </View>
+        <View style={styles.row}>
+          <GhostButton label="Clear" compact onPress={() => setCode('')} />
+          <View style={styles.primarySlot}>
+            <PrimaryButton
+              label="Try lock"
+              disabled={disabled || !code.trim()}
+              onPress={() => onSubmit(code.trim())}
+            />
+          </View>
+        </View>
+      </GlassPanel>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  box: {
-    backgroundColor: playerTheme.bgElevated,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: playerTheme.line,
-    padding: space.md,
-    gap: space.md,
+  box: { gap: space.sm },
+  kicker: {
+    fontFamily: F.medium,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: playerTheme.accentBright,
   },
   label: {
     fontFamily: F.semibold,
-    fontSize: 16,
+    fontSize: 18,
     color: playerTheme.text,
   },
   input: {
     fontFamily: F.mono,
     fontSize: 22,
     letterSpacing: 4,
+    textAlign: 'center',
     color: playerTheme.text,
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 14,
     borderRadius: radius.md,
-    backgroundColor: playerTheme.bg,
+    backgroundColor: 'rgba(0,0,0,0.35)',
     borderWidth: 1,
-    borderColor: playerTheme.line,
-    minHeight: 48,
+    borderColor: playerTheme.glassStroke,
+    minHeight: 52,
   },
-  row: { flexDirection: 'row', gap: space.sm, justifyContent: 'flex-end' },
+  row: { flexDirection: 'row', gap: space.sm, alignItems: 'stretch' },
+  primarySlot: { flex: 1, minWidth: 0 },
 });

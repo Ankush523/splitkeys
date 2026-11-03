@@ -1,20 +1,41 @@
 import { memo, type ReactNode } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   StyleSheet,
   Text,
   View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { F, gmTheme, playerTheme, radius, space } from '../theme/tokens';
-
-type Tone = 'player' | 'gm';
-
-const themeOf = (tone: Tone) => (tone === 'player' ? playerTheme : gmTheme);
+import { GameBackdrop } from './GameBackdrop';
+import { GlassPanel } from './GlassPanel';
+import { IconKeyMark } from './icons';
+import { PressableScale } from './PressableScale';
+import {
+  F,
+  glowAccent,
+  radius,
+  space,
+  themeOf,
+  type,
+  type Tone,
+} from '../theme/tokens';
 
 export const Title = memo(function Title({
+  children,
+  tone = 'player',
+  size = 'title',
+}: {
+  children: ReactNode;
+  tone?: Tone;
+  size?: 'display' | 'title';
+}) {
+  const c = themeOf(tone);
+  const t = size === 'display' ? type.display : type.title;
+  return <Text style={[t, { color: c.text }]}>{children}</Text>;
+});
+
+export const Eyebrow = memo(function Eyebrow({
   children,
   tone = 'player',
 }: {
@@ -22,21 +43,30 @@ export const Title = memo(function Title({
   tone?: Tone;
 }) {
   const c = themeOf(tone);
-  return <Text style={[styles.title, { color: c.text }]}>{children}</Text>;
+  return <Text style={[type.overline, { color: c.accentBright }]}>{children}</Text>;
 });
 
 export const Body = memo(function Body({
   children,
   tone = 'player',
   muted,
+  small,
 }: {
   children: ReactNode;
   tone?: Tone;
   muted?: boolean;
+  small?: boolean;
 }) {
   const c = themeOf(tone);
   return (
-    <Text style={[styles.body, { color: muted ? c.muted : c.text }]}>{children}</Text>
+    <Text
+      style={[
+        small ? type.caption : type.body,
+        { color: muted ? c.muted : c.text },
+      ]}
+    >
+      {children}
+    </Text>
   );
 });
 
@@ -49,8 +79,27 @@ export function Screen({
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
-  const c = themeOf(tone);
-  return <View style={[styles.screen, { backgroundColor: c.bg }, style]}>{children}</View>;
+  return (
+    <GameBackdrop tone={tone}>
+      <View style={[styles.screen, style]}>{children}</View>
+    </GameBackdrop>
+  );
+}
+
+export function Card({
+  tone = 'player',
+  children,
+  style,
+}: {
+  tone?: Tone;
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <GlassPanel tone={tone} style={[styles.cardLift, style]} contentStyle={styles.cardBody}>
+      {children}
+    </GlassPanel>
+  );
 }
 
 export function PrimaryButton({
@@ -68,16 +117,19 @@ export function PrimaryButton({
 }) {
   const c = themeOf(tone);
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: disabled || loading }}
       disabled={disabled || loading}
+      haptic={!disabled}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.btn,
+        glowAccent(tone),
         {
           backgroundColor: c.accent,
-          opacity: disabled ? 0.45 : pressed ? 0.88 : 1,
+          opacity: disabled ? 0.38 : 1,
         },
       ]}
     >
@@ -86,7 +138,7 @@ export function PrimaryButton({
       ) : (
         <Text style={[styles.btnLabel, { color: c.accentInk }]}>{label}</Text>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -94,24 +146,33 @@ export function GhostButton({
   label,
   onPress,
   tone = 'player',
+  compact,
 }: {
   label: string;
   onPress: () => void;
   tone?: Tone;
+  compact?: boolean;
 }) {
   const c = themeOf(tone);
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.ghost,
-        { borderColor: c.line, opacity: pressed ? 0.75 : 1 },
-      ]}
+      style={styles.btnBlock}
     >
-      <Text style={[styles.ghostLabel, { color: c.text }]}>{label}</Text>
-    </Pressable>
+      <View
+        style={[
+          compact ? styles.ghostCompact : styles.ghost,
+          {
+            borderColor: c.glassStroke,
+            backgroundColor: c.glassFill,
+          },
+        ]}
+      >
+        <Text style={[styles.ghostLabel, { color: c.text }]}>{label}</Text>
+      </View>
+    </PressableScale>
   );
 }
 
@@ -132,54 +193,70 @@ export function Chip({
       style={[
         styles.chip,
         {
-          backgroundColor: active ? c.accentSoft : c.bgElevated,
-          borderColor: active ? c.accent : c.line,
+          backgroundColor: active ? c.accentSoft : c.glassFill,
+          borderColor: active ? c.accentBright : c.glassStroke,
         },
       ]}
     >
-      <Text style={[styles.chipLabel, { color: active ? c.accent : c.muted }]}>{label}</Text>
+      <Text style={[styles.chipLabel, { color: active ? c.accentBright : c.muted }]}>
+        {label}
+      </Text>
     </View>
   );
   if (!onPress) return inner;
   return (
-    <Pressable accessibilityRole="button" onPress={onPress}>
+    <PressableScale accessibilityRole="button" onPress={onPress} haptic={false}>
       {inner}
-    </Pressable>
+    </PressableScale>
   );
 }
 
 export function Divider({ tone = 'player' }: { tone?: Tone }) {
   const c = themeOf(tone);
-  return <View style={[styles.divider, { backgroundColor: c.line }]} />;
+  return <View style={[styles.divider, { backgroundColor: c.lineSoft }]} />;
 }
 
-export function LogoMark({ tone = 'player' }: { tone?: Tone }) {
+export function LogoMark({ tone = 'player', large }: { tone?: Tone; large?: boolean }) {
   const c = themeOf(tone);
   return (
     <View style={styles.logoRow}>
-      <View style={[styles.logoKey, { borderColor: c.accent }]}>
-        <View style={[styles.logoTeeth, { backgroundColor: c.accent }]} />
+      <View style={[styles.logoIcon, { borderColor: c.glassStroke, backgroundColor: c.glassFill }]}>
+        <IconKeyMark size={large ? 32 : 26} color={c.accentBright} />
       </View>
-      <Text style={[styles.logoText, { color: c.text }]}>Split Keys</Text>
+      <View style={styles.logoTextCol}>
+        <Text style={[type.overline, { color: c.muted }]}>Split Keys</Text>
+        <Text
+          style={[large ? type.headline : type.headline, { color: c.text }]}
+          numberOfLines={2}
+        >
+          Offline escape
+        </Text>
+      </View>
     </View>
+  );
+}
+
+export function SectionHeader({
+  title,
+  tone = 'player',
+}: {
+  title: string;
+  tone?: Tone;
+}) {
+  const c = themeOf(tone);
+  return (
+    <Text style={[type.overline, styles.sectionHeader, { color: c.muted }]}>{title}</Text>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  title: {
-    fontFamily: F.semibold,
-    fontSize: 28,
-    letterSpacing: -0.6,
-    lineHeight: 34,
-  },
-  body: {
-    fontFamily: F.regular,
-    fontSize: 16,
-    lineHeight: 24,
-  },
+  cardLift: { marginVertical: 2 },
+  cardBody: { gap: space.sm },
+  btnBlock: { alignSelf: 'stretch' },
   btn: {
-    minHeight: 48,
+    alignSelf: 'stretch',
+    minHeight: 54,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -188,33 +265,42 @@ const styles = StyleSheet.create({
   btnLabel: {
     fontFamily: F.semibold,
     fontSize: 16,
+    letterSpacing: 0.3,
   },
   ghost: {
-    minHeight: 48,
+    minHeight: 50,
     borderRadius: radius.md,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: space.lg,
   },
+  ghostCompact: {
+    minHeight: 44,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: space.md,
+  },
   ghostLabel: { fontFamily: F.medium, fontSize: 15 },
   chip: {
     borderRadius: radius.pill,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   chipLabel: { fontFamily: F.medium, fontSize: 13 },
   divider: { height: StyleSheet.hairlineWidth, width: '100%' },
-  logoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoKey: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    borderWidth: 2,
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  logoIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoTeeth: { width: 10, height: 10, borderRadius: 2 },
-  logoText: { fontFamily: F.semibold, fontSize: 22, letterSpacing: -0.5 },
+  logoTextCol: { flex: 1, flexShrink: 1 },
+  sectionHeader: { marginBottom: space.xs },
 });
